@@ -1,0 +1,23 @@
+{
+    "extends": [
+        "react-app",
+        "react-app/jest"
+    ],
+    "rules": {
+        "max-len": 0,
+        "prettier/prettier": [
+            "error",
+            {
+                "singleQuote": true,
+                "jsxSingleQuote": true,
+                "semi": false,
+                "printWidth": 100,
+                "endOfLine": "auto"
+            }
+        ]
+    },
+    "plugins": [
+        "jsx-a11y",
+        "prettier"
+    ]
+}
