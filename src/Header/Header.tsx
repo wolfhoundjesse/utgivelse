@@ -13,12 +13,17 @@ import { Autocomplete } from '@material-ui/lab'
 import { Octokit } from '@octokit/rest'
 import { useDebouncedFn } from 'beautiful-react-hooks'
 import { useState } from 'react'
+import { ReleaseDetails, RepositoryDetails } from '../models'
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     root: {
       flexGrow: 1,
       zIndex: theme.zIndex.drawer + 1,
+    },
+    appBar: {
+      height: 84,
+      justifyContent: 'center',
     },
     menuButton: {
       marginRight: theme.spacing(2),
@@ -36,25 +41,20 @@ const octokit = new Octokit({
   userAgent: 'utgiveles v0.1.0',
 })
 
-type RepositoryDetails = {
-  id: number
-  name: string
-  description: string
-  archived: boolean
-}
-
 type HeaderProps = {
-  addRelease: (releases: any) => void
+  addRelease: (releaseDetails: ReleaseDetails) => void
 }
 
 export const Header = ({ addRelease }: HeaderProps) => {
   const classes = useStyles()
 
   const [options, setOptions] = useState<RepositoryDetails[]>([])
+  const [error, setError] = useState<string>('')
 
   const handleInputChange = useDebouncedFn(async (event: any, value: string, reason: string) => {
     if (!value) {
       setOptions([])
+      setError('')
       return
     }
     const { data } = await octokit.search.repos({
@@ -74,17 +74,32 @@ export const Header = ({ addRelease }: HeaderProps) => {
   const handleOnChange = async (event: any, value: RepositoryDetails | null, reason: string) => {
     if (!value) return
     let [owner, repo] = value.name.split('/')
-    const { data } = await octokit.repos.getLatestRelease({
-      owner,
-      repo,
-    })
+    try {
+      const { data } = await octokit.repos.getLatestRelease({
+        owner,
+        repo,
+      })
+      const releaseDetails: ReleaseDetails = {
+        id: data.id,
+        body: data.body,
+        createdAt: data.created_at,
+        draft: data.draft,
+        prerelease: data.prerelease,
+        repoName: value.name,
+        tagName: data.tag_name,
+      }
+      addRelease(releaseDetails)
+    } catch (error) {
+      setError(
+        `Oops! There are no release notes associated with ${owner}/${repo}. Please try again.`
+      )
+    }
     // TODO: Decide which data we care about, and give it to the releaseList component
-    console.log(data)
   }
 
   return (
     <div className={classes.root}>
-      <AppBar position='fixed'>
+      <AppBar position='fixed' className={classes.appBar}>
         <Toolbar variant='dense'>
           <Typography variant='h6' color='inherit' aria-label='Utgiveles'>
             Utgiveles
@@ -111,7 +126,7 @@ export const Header = ({ addRelease }: HeaderProps) => {
                 <TextField
                   {...params}
                   className={classes.search}
-                  label='Search Repos'
+                  label='Search repos to add …'
                   margin='dense'
                   variant='filled'
                   InputProps={{
@@ -120,6 +135,8 @@ export const Header = ({ addRelease }: HeaderProps) => {
                     endAdornment: null,
                     type: 'search',
                   }}
+                  error={Boolean(error)}
+                  helperText={Boolean(error) ? error : ''}
                 />
               )}
             />
