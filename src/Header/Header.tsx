@@ -60,7 +60,6 @@ export const Header = ({ addRelease }: HeaderProps) => {
     const { data } = await octokit.search.repos({
       q: value,
     })
-    console.log(data.items.filter((item) => item.archived))
     setOptions(
       data.items.map((item) => ({
         id: item.id,
