@@ -72,14 +72,14 @@ export const ReleaseList = ({ deleteRelease, releases }: ReleaseListProps) => {
                 </ListItemAvatar>
                 <ListItemText
                   disableTypography
-                  primary={<Typography variant='body1'>release.repoName</Typography>}
+                  primary={<Typography variant='body1'>{release.repoName}</Typography>}
                   secondary={
                     <>
                       <Typography variant='caption'>
                         {format(parseISO(release.createdAt), 'dd MMM yyyy @HH:mm')}
                       </Typography>
                       <Box display='flex' mt={0.5}>
-                        {true ? (
+                        {release.draft ? (
                           <Chip
                             component='span'
                             className={classes.chip}
@@ -88,7 +88,7 @@ export const ReleaseList = ({ deleteRelease, releases }: ReleaseListProps) => {
                             size='small'
                           />
                         ) : null}
-                        {true ? (
+                        {release.prerelease ? (
                           <Chip
                             component='span'
                             className={classes.chip}

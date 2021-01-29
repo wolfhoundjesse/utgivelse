@@ -2,6 +2,7 @@ import {
   AppBar,
   Box,
   Chip,
+  CircularProgress,
   createStyles,
   makeStyles,
   TextField,
@@ -47,31 +48,41 @@ type HeaderProps = {
 
 export const Header = ({ addRelease }: HeaderProps) => {
   const classes = useStyles()
-
-  const [options, setOptions] = useState<RepositoryDetails[]>([])
+  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string>('')
+  const [options, setOptions] = useState<RepositoryDetails[]>([])
 
   const handleInputChange = useDebouncedFn(async (event: any, value: string, reason: string) => {
+    setError('')
     if (!value) {
       setOptions([])
-      setError('')
       return
     }
-    const { data } = await octokit.search.repos({
-      q: value,
-    })
-    setOptions(
-      data.items.map((item) => ({
-        id: item.id,
-        name: item.full_name,
-        avatarUrl: item.owner.avatar_url,
-        description: item.description,
-        archived: item.archived,
-      }))
-    )
+    try {
+      setIsLoading(true)
+      const { data } = await octokit.search.repos({
+        q: value,
+      })
+      setOptions(
+        data.items.map((item) => ({
+          id: item.id,
+          name: item.full_name,
+          avatarUrl: item.owner.avatar_url,
+          description: item.description,
+          archived: item.archived,
+        }))
+      )
+      setIsLoading(false)
+    } catch (error) {
+      setIsLoading(false)
+      setError("Oops! GitHub's API returned an error. Try again!")
+      console.log('Error: Header.tsx => handleInputChange: ', error)
+    }
   }, 250)
 
   const handleOnChange = async (event: any, value: RepositoryDetails | null, reason: string) => {
+    // clear errors when an item is selected
+    setError('')
     if (!value) return
     let [owner, repo] = value.name.split('/')
     try {
@@ -79,7 +90,6 @@ export const Header = ({ addRelease }: HeaderProps) => {
         owner,
         repo,
       })
-      console.log(value.avatarUrl)
       const releaseDetails: ReleaseDetails = {
         id: data.id,
         body: data.body,
@@ -92,9 +102,13 @@ export const Header = ({ addRelease }: HeaderProps) => {
       }
       addRelease(releaseDetails)
     } catch (error) {
-      setError(
-        `Oops! There are no release notes associated with ${owner}/${repo}. Please try again.`
-      )
+      if ('name' in error && error.name === 'DuplicationError') {
+        setError(error.message)
+      } else {
+        setError(
+          `Oops! There are no release notes associated with ${owner}/${repo}. Please try again.`
+        )
+      }
     }
     // TODO: Decide which data we care about, and give it to the releaseList component
   }
@@ -124,23 +138,28 @@ export const Header = ({ addRelease }: HeaderProps) => {
               getOptionSelected={(option, value) => option.id === value.id}
               onInputChange={handleInputChange}
               onChange={handleOnChange}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  className={classes.search}
-                  label='Search repos to add …'
-                  margin='dense'
-                  variant='filled'
-                  InputProps={{
-                    ...params.InputProps,
-                    startAdornment: null,
-                    endAdornment: null,
-                    type: 'search',
-                  }}
-                  error={Boolean(error)}
-                  helperText={Boolean(error) ? error : ''}
-                />
-              )}
+              loading={isLoading}
+              closeIcon={null}
+              renderInput={(params) => {
+                return (
+                  <TextField
+                    {...params}
+                    className={classes.search}
+                    label='Search repos to add …'
+                    margin='dense'
+                    variant='filled'
+                    InputProps={{
+                      ref: params.InputProps.ref,
+                      endAdornment: (
+                        <>{isLoading ? <CircularProgress color='inherit' size={20} /> : null}</>
+                      ),
+                      type: 'search',
+                    }}
+                    error={Boolean(error)}
+                    helperText={Boolean(error) ? error : ''}
+                  />
+                )
+              }}
             />
           </Box>
         </Toolbar>

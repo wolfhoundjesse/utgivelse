@@ -6,13 +6,18 @@ import { Header } from './Header/Header'
 import { ReleaseList } from './ReleaseList/ReleaseList'
 import { ReleaseDetails } from './models'
 import { useLocalStorage } from 'beautiful-react-hooks'
+import { DuplicationError } from './utils/custom-errors'
 
 export const App = () => {
   const [releaseCache, setReleaseCache] = useLocalStorage<ReleaseDetails[]>('releases', [])
   const [releases, setReleases] = useState<ReleaseDetails[]>(releaseCache || [])
 
   const handleAddRelease = (releaseDetails: ReleaseDetails) => {
-    console.log(releaseDetails)
+    if (releases.map((release) => release.id).includes(releaseDetails.id)) {
+      throw new DuplicationError(
+        `${releaseDetails.repoName} is already being tracked. Please try again.`
+      )
+    }
     setReleases((prev) => [...prev, releaseDetails])
     setReleaseCache(releaseCache ? [...releaseCache, releaseDetails] : [releaseDetails])
   }
