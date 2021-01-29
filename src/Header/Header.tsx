@@ -64,6 +64,7 @@ export const Header = ({ addRelease }: HeaderProps) => {
       data.items.map((item) => ({
         id: item.id,
         name: item.full_name,
+        avatarUrl: item.owner.avatar_url,
         description: item.description,
         archived: item.archived,
       }))
@@ -78,6 +79,7 @@ export const Header = ({ addRelease }: HeaderProps) => {
         owner,
         repo,
       })
+      console.log(value.avatarUrl)
       const releaseDetails: ReleaseDetails = {
         id: data.id,
         body: data.body,
@@ -85,6 +87,7 @@ export const Header = ({ addRelease }: HeaderProps) => {
         draft: data.draft,
         prerelease: data.prerelease,
         repoName: value.name,
+        avatarUrl: value.avatarUrl,
         tagName: data.tag_name,
       }
       addRelease(releaseDetails)

@@ -17,11 +17,16 @@ export const App = () => {
     setReleaseCache(releaseCache ? [...releaseCache, releaseDetails] : [releaseDetails])
   }
 
+  const handleDelete = (releaseId: number) => {
+    setReleases((prev) => prev.filter((release) => release.id !== releaseId))
+    setReleaseCache(releaseCache.filter((release) => release.id !== releaseId))
+  }
+
   return (
     <div style={{ display: 'flex' }}>
       <CssBaseline />
       <Header addRelease={handleAddRelease} />
-      <ReleaseList releases={releases} />
+      <ReleaseList releases={releases} deleteRelease={handleDelete} />
     </div>
   )
 }
