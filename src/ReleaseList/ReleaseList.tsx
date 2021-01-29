@@ -26,6 +26,9 @@ const useStyles = makeStyles((theme: Theme) =>
     drawerContainer: {
       overflow: 'auto',
     },
+    toolbar: {
+      height: 84,
+    },
   })
 )
 
@@ -44,7 +47,7 @@ export const ReleaseList = ({ releases }: ReleaseListProps) => {
         paper: classes.drawerPaper,
       }}
     >
-      <Toolbar />
+      <Toolbar className={classes.toolbar} />
       <div className={classes.drawerContainer}>
         <List>
           {releases?.length > 0 ? (
