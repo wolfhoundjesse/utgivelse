@@ -5,5 +5,6 @@ export type ReleaseDetails = {
   draft: boolean
   prerelease: boolean
   repoName: string
+  avatarUrl: string
   tagName: string
 }
