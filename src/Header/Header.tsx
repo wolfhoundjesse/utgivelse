@@ -11,15 +11,15 @@ import {
   Typography,
 } from '@material-ui/core'
 import { Autocomplete } from '@material-ui/lab'
-import { Octokit } from '@octokit/rest'
 import { useDebouncedFn } from 'beautiful-react-hooks'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useAppDispatch, useAppState } from '../app.context'
 import { ReleaseDetails, RepositoryDetails } from '../models'
+import { octokit } from '../utils'
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     root: {
-      flexGrow: 1,
       zIndex: theme.zIndex.drawer + 1,
     },
     appBar: {
@@ -37,52 +37,54 @@ const useStyles = makeStyles((theme: Theme) =>
   })
 )
 
-const octokit = new Octokit({
-  auth: process.env.REACT_APP_OCTOKIT_AUTH_TOKEN,
-  userAgent: 'utgiveles v0.1.0',
-})
-
-type HeaderProps = {
-  addRelease: (releaseDetails: ReleaseDetails) => void
-}
-
-export const Header = ({ addRelease }: HeaderProps) => {
+export const Header = () => {
   const classes = useStyles()
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string>('')
+  const [query, setQuery] = useState('')
   const [options, setOptions] = useState<RepositoryDetails[]>([])
+  const inputRef = useRef<HTMLInputElement>(null)
+  const dispatch = useAppDispatch()
+  const { error, releases } = useAppState()
 
-  const handleInputChange = useDebouncedFn(async (event: any, value: string, reason: string) => {
-    setError('')
-    if (!value) {
+  useEffect(() => inputRef?.current?.focus(), [])
+
+  useEffect(() => {
+    const searchRepos = async (query: string) => {
+      try {
+        setIsLoading(true)
+        const { data } = await octokit.search.repos({
+          q: query,
+        })
+        setOptions(
+          data.items.map((item) => ({
+            id: item.id,
+            name: item.full_name,
+            avatarUrl: item.owner.avatar_url,
+            description: item.description,
+            archived: item.archived,
+          }))
+        )
+        setIsLoading(false)
+      } catch (error) {
+        setIsLoading(false)
+        dispatch({ type: 'SetError', payload: "Oops! GitHub's API returned an error. Try again!" })
+        console.log('Error: Header.tsx => handleInputChange: ', error)
+      }
+    }
+    if (Boolean(query)) {
+      searchRepos(query)
+    } else {
       setOptions([])
-      return
     }
-    try {
-      setIsLoading(true)
-      const { data } = await octokit.search.repos({
-        q: value,
-      })
-      setOptions(
-        data.items.map((item) => ({
-          id: item.id,
-          name: item.full_name,
-          avatarUrl: item.owner.avatar_url,
-          description: item.description,
-          archived: item.archived,
-        }))
-      )
-      setIsLoading(false)
-    } catch (error) {
-      setIsLoading(false)
-      setError("Oops! GitHub's API returned an error. Try again!")
-      console.log('Error: Header.tsx => handleInputChange: ', error)
-    }
-  }, 250)
+  }, [dispatch, query])
 
-  const handleOnChange = async (event: any, value: RepositoryDetails | null, reason: string) => {
-    // clear errors when an item is selected
-    setError('')
+  const handleInputChange = useDebouncedFn(
+    (event: any, value: string, reason: string) => setQuery(value),
+    250
+  )
+
+  const handleOnChange = async (event: any, value: any, reason: string) => {
+    dispatch({ type: 'ClearError' })
     if (!value) return
     let [owner, repo] = value.name.split('/')
     try {
@@ -100,17 +102,28 @@ export const Header = ({ addRelease }: HeaderProps) => {
         avatarUrl: value.avatarUrl,
         tagName: data.tag_name,
       }
+      // Error on body: null for now
+      if (!releaseDetails.body) {
+        throw new Error(`Body for ${releaseDetails.repoName} is empty.`)
+      }
       addRelease(releaseDetails)
     } catch (error) {
-      if ('name' in error && error.name === 'DuplicationError') {
-        setError(error.message)
-      } else {
-        setError(
-          `Oops! There are no release notes associated with ${owner}/${repo}. Please try again.`
-        )
-      }
+      dispatch({
+        type: 'SetError',
+        payload: `There are no release notes associated with ${owner}/${repo}. Please try again.`,
+      })
     }
-    // TODO: Decide which data we care about, and give it to the releaseList component
+  }
+
+  const addRelease = (releaseDetails: ReleaseDetails) => {
+    if (releases.map((release) => release.id).includes(releaseDetails.id)) {
+      dispatch({
+        type: 'SetError',
+        payload: `${releaseDetails.repoName} is already being tracked. Try again.`,
+      })
+      return
+    }
+    dispatch({ type: 'AddRelease', payload: releaseDetails })
   }
 
   return (
@@ -123,6 +136,7 @@ export const Header = ({ addRelease }: HeaderProps) => {
           <Box mr={7} display='flex' justifyContent='center' flexGrow={1}>
             <Autocomplete
               id='github-repo-search'
+              freeSolo
               options={options}
               autoHighlight
               getOptionLabel={(option) => option.name}
@@ -153,7 +167,6 @@ export const Header = ({ addRelease }: HeaderProps) => {
                       endAdornment: (
                         <>{isLoading ? <CircularProgress color='inherit' size={20} /> : null}</>
                       ),
-                      type: 'search',
                     }}
                     error={Boolean(error)}
                     helperText={Boolean(error) ? error : ''}
