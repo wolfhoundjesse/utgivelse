@@ -23,6 +23,7 @@ const useStyles = makeStyles((theme: Theme) =>
       zIndex: theme.zIndex.drawer + 1,
     },
     appBar: {
+      backgroundImage: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
       height: 84,
       justifyContent: 'center',
     },
