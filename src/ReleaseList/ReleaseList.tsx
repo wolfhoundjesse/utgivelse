@@ -22,7 +22,6 @@ import { useDebouncedFn } from 'beautiful-react-hooks'
 import { octokit } from '../utils'
 import { format, isAfter, parseISO } from 'date-fns'
 import { useAppDispatch, useAppState } from '../app.context'
-import { useState } from 'react'
 
 const drawerwidth = 360
 
@@ -70,7 +69,7 @@ export const ReleaseList = () => {
             owner,
             repo,
           })
-          if (isAfter(Date.now(), parseISO(release.createdAt))) {
+          if (isAfter(parseISO(data.created_at), parseISO(release.createdAt))) {
             dispatch({ type: 'UpdateReleaseNotes', payload: { id: data.id, body: data.body } })
           }
         })
