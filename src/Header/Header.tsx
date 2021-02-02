@@ -85,6 +85,11 @@ export const Header = () => {
   )
 
   const handleOnChange = async (event: any, value: any, reason: string) => {
+    console.log(`====================================== \n
+    ======== Releases ============== \n
+    ====================================== \n
+    Count: ${releases?.length} \n
+    ${releases || 'No Releases'}`)
     dispatch({ type: 'ClearError' })
     if (!value) return
     let [owner, repo] = value.name.split('/')
@@ -109,6 +114,7 @@ export const Header = () => {
       }
       addRelease(releaseDetails)
     } catch (error) {
+      console.log(error)
       dispatch({
         type: 'SetError',
         payload: `There are no release notes associated with ${owner}/${repo}. Please try again.`,
@@ -117,6 +123,7 @@ export const Header = () => {
   }
 
   const addRelease = (releaseDetails: ReleaseDetails) => {
+    console.log(releases)
     if (releases.map((release) => release.id).includes(releaseDetails.id)) {
       dispatch({
         type: 'SetError',
