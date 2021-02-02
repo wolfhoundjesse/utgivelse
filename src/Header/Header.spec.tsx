@@ -41,7 +41,7 @@ describe('Search component in header', () => {
     autoComplete.focus()
     userEvent.type(autoComplete, 'vuejs/vue')
 
-    await waitFor(() => expect(getByText('vue')).toBeInTheDocument())
+    await waitFor(() => expect(getByText('vuejs/vue')).toBeInTheDocument())
   })
 
   test('displays an error when GitHub presents some issue', async () => {

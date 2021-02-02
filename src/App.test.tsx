@@ -1,8 +1,8 @@
 import React from 'react'
-import { render, screen } from '@testing-library/react'
+import { render, screen } from './test/test-utils'
 import { App } from './App'
 
-test.skip('renders learn react link', () => {
+test('renders learn react link', () => {
   render(<App />)
   const brand = screen.getByText(/utgiveles/i)
   expect(brand).toBeInTheDocument()
